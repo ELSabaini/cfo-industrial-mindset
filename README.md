@@ -68,3 +68,7 @@ Abra diretamente no Google Colab para rodar o projeto:
 
 👉 Você está analisando números…  
 ou modelando um sistema?
+
+## 📷 Exemplo de saída
+
+![Fronteira eficiente corporativa](gráfico.png)
