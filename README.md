@@ -71,4 +71,4 @@ ou modelando um sistema?
 
 ## 📷 Exemplo de saída
 
-![Fronteira eficiente corporativa]()
+![Fronteira eficiente corporativa](gráfico.png)
