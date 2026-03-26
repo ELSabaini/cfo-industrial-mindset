@@ -14,64 +14,20 @@ st.markdown("""
     .stTabs [data-baseweb="tab-list"] {
         gap: 10px;
     }
-
-    /* Tabs padrão */
     .stTabs [data-baseweb="tab"] {
-        height: 56px;
+        height: 50px;
         white-space: pre-wrap;
-        border-radius: 8px 8px 0px 0px;
-        padding-left: 22px;
-        padding-right: 22px;
-        font-weight: 600;
-        font-size: 18px;
-        background-color: rgba(255,255,255,0.08);
-        color: rgba(255,255,255,0.88);
-        transition: all 0.25s ease-in-out;
-        transform: translateY(0px) scale(1);
-        border: 1px solid rgba(255,255,255,0.06);
+        background-color: #f0f2f6;
+        border-radius: 5px 5px 0px 0px;
+        gap: 1px;
+        padding-left: 20px;
+        padding-right: 20px;
+        font-weight: bold;
     }
-
-    /* Ícones maiores dentro das tabs */
-    .stTabs [data-baseweb="tab"] p {
-        font-size: 21px;
-        margin: 0;
-        line-height: 1.2;
-    }
-
-    /* Hover */
-    .stTabs [data-baseweb="tab"]:hover {
-        background-color: rgba(255,255,255,0.16);
-        color: white;
-        transform: translateY(-2px) scale(1.02);
-        box-shadow: 0 6px 14px rgba(0,0,0,0.18);
-    }
-
-    /* Aba selecionada */
     .stTabs [aria-selected="true"] {
-        background-color: #ff4b4b !important;
+        background-color: #0e1117 !important;
         color: white !important;
-        transform: translateY(-2px) scale(1.03);
-        box-shadow: 0 8px 18px rgba(255, 75, 75, 0.28);
-        border: 1px solid rgba(255,255,255,0.10);
     }
-
-    /* Linha inferior ativa */
-    .stTabs [aria-selected="true"]::after {
-        content: "";
-        display: block;
-        height: 3px;
-        background: #ff4b4b;
-        margin-top: 5px;
-        border-radius: 999px;
-        animation: pulsebar 1.2s ease-in-out infinite;
-    }
-
-    @keyframes pulsebar {
-        0% { opacity: 0.65; transform: scaleX(0.96); }
-        50% { opacity: 1; transform: scaleX(1); }
-        100% { opacity: 0.65; transform: scaleX(0.96); }
-    }
-
     .main-header {
         font-size: 45px;
         font-weight: bold;
@@ -167,15 +123,10 @@ nomes = pivot_ebitda.columns.tolist()
 rec_pesos = df.groupby('linha')['receita'].mean().reindex(nomes)
 pesos_atuais = (rec_pesos / rec_pesos.sum()).values
 
-def obj_func(w):
-    return -portfolio_stats(w, retornos, cov)[2]
-
-opt_res = minimize(
-    obj_func,
-    np.repeat(1/len(nomes), len(nomes)),
-    bounds=[(0, exposicao_max)]*len(nomes),
-    constraints={'type': 'eq', 'fun': lambda w: np.sum(w)-1}
-)
+def obj_func(w): return -portfolio_stats(w, retornos, cov)[2]
+opt_res = minimize(obj_func, np.repeat(1/len(nomes), len(nomes)),
+                  bounds=[(0, exposicao_max)]*len(nomes),
+                  constraints={'type':'eq', 'fun': lambda w: np.sum(w)-1})
 pesos_otim = opt_res.x
 
 # --- HEADER PRINCIPAL ---
@@ -211,14 +162,9 @@ with tabs[0]:
 
     with col2:
         consolidado = df.groupby('data')[['receita', 'ebitda']].sum().reset_index()
-        fig = px.area(
-            consolidado,
-            x='data',
-            y=['receita', 'ebitda'],
-            title="Fluxo Consolidado da Empresa",
-            template='plotly_white',
-            color_discrete_sequence=['#A6CEE3', '#1F78B4']
-        )
+        fig = px.area(consolidado, x='data', y=['receita', 'ebitda'],
+                     title="Fluxo Consolidado da Empresa", template='plotly_white',
+                     color_discrete_sequence=['#A6CEE3', '#1F78B4'])
         st.plotly_chart(fig, use_container_width=True)
 
 # --- TAB 2: DIAGNÓSTICO ---
@@ -227,30 +173,19 @@ with tabs[1]:
     col_a, col_b = st.columns([2, 1])
 
     with col_a:
-        fig_scatter = px.scatter(
-            resumo,
-            x='risco_ebitda',
-            y='ebitda_medio',
-            size='receita_media',
-            color='sharpe_corp',
-            text='linha',
-            hover_name='linha',
-            title="Eficiência Operacional por Linha de Negócio",
-            labels={'risco_ebitda': 'Incerteza (Risco)', 'ebitda_medio': 'EBITDA Médio (Retorno)'},
-            color_continuous_scale='Viridis',
-            height=500
-        )
+        fig_scatter = px.scatter(resumo, x='risco_ebitda', y='ebitda_medio', size='receita_media',
+                                color='sharpe_corp', text='linha', hover_name='linha',
+                                title="Eficiência Operacional por Linha de Negócio",
+                                labels={'risco_ebitda': 'Incerteza (Risco)', 'ebitda_medio': 'EBITDA Médio (Retorno)'},
+                                color_continuous_scale='Viridis', height=500)
         fig_scatter.update_traces(textposition='top center')
         st.plotly_chart(fig_scatter, use_container_width=True)
 
     with col_b:
         st.markdown("### Ranking de Eficiência (Sharpe)")
         st.write("O 'Sharpe Corporativo' indica quanto lucro cada linha gera por unidade de risco assumida.")
-        st.dataframe(
-            resumo[['linha', 'sharpe_corp']].sort_values('sharpe_corp', ascending=False),
-            hide_index=True,
-            use_container_width=True
-        )
+        st.dataframe(resumo[['linha', 'sharpe_corp']].sort_values('sharpe_corp', ascending=False),
+                     hide_index=True, use_container_width=True)
         st.info("Linhas no topo são 'âncoras de estabilidade'. Linhas na base são 'apostas voláteis'.")
 
 # --- TAB 3: OTIMIZAÇÃO ---
@@ -259,6 +194,7 @@ with tabs[2]:
     col_c, col_d = st.columns(2)
 
     with col_c:
+        # Simulação Monte Carlo
         num_portfolios = 2000
         results = np.zeros((3 + len(nomes), num_portfolios))
         for i in range(num_portfolios):
@@ -267,43 +203,28 @@ with tabs[2]:
             ret, vol, sharpe = portfolio_stats(weights, retornos, cov)
             results[0, i], results[1, i], results[2, i] = ret, vol, sharpe
 
-        fig_front = px.scatter(
-            x=results[1, :],
-            y=results[0, :],
-            color=results[2, :],
-            title="Curva de Possibilidades (Markowitz)",
-            labels={'x': 'Risco do Portfólio', 'y': 'EBITDA do Portfólio', 'color': 'Sharpe'},
-            opacity=0.4,
-            color_continuous_scale='Bluered'
-        )
+        fig_front = px.scatter(x=results[1, :], y=results[0, :], color=results[2, :],
+                              title="Curva de Possibilidades (Markowitz)",
+                              labels={'x': 'Risco do Portfólio', 'y': 'EBITDA do Portfólio', 'color': 'Sharpe'},
+                              opacity=0.4, color_continuous_scale='Bluered')
 
+        # Marcar Atual e Otimizado
         r_at, v_at, _ = portfolio_stats(pesos_atuais, retornos, cov)
         r_ot, v_ot, _ = portfolio_stats(pesos_otim, retornos, cov)
-
-        fig_front.add_trace(go.Scatter(
-            x=[v_at], y=[r_at], name="Cenário Atual", mode='markers+text',
-            text=["ATUAL"], textposition="top center",
-            marker=dict(size=15, color='black', symbol='diamond')
-        ))
-        fig_front.add_trace(go.Scatter(
-            x=[v_ot], y=[r_ot], name="Cenário Otimizado", mode='markers+text',
-            text=["OTIMIZADO"], textposition="top center",
-            marker=dict(size=18, color='gold', symbol='star')
-        ))
+        fig_front.add_trace(go.Scatter(x=[v_at], y=[r_at], name="Cenário Atual", mode='markers+text',
+                                     text=["ATUAL"], textposition="top center",
+                                     marker=dict(size=15, color='black', symbol='diamond')))
+        fig_front.add_trace(go.Scatter(x=[v_ot], y=[r_ot], name="Cenário Otimizado", mode='markers+text',
+                                     text=["OTIMIZADO"], textposition="top center",
+                                     marker=dict(size=18, color='gold', symbol='star')))
         st.plotly_chart(fig_front, use_container_width=True)
 
     with col_d:
         mix_data = pd.DataFrame({'Linha': nomes, 'Atual': pesos_atuais, 'Otimizado': pesos_otim})
-        fig_bar = px.bar(
-            mix_data.melt(id_vars='Linha'),
-            x='Linha',
-            y='value',
-            color='variable',
-            barmode='group',
-            title="Shift Recomendado no Mix Comercial",
-            labels={'value': '% no Mix', 'variable': 'Cenário'},
-            template='plotly_white'
-        )
+        fig_bar = px.bar(mix_data.melt(id_vars='Linha'), x='Linha', y='value', color='variable',
+                        barmode='group', title="Shift Recomendado no Mix Comercial",
+                        labels={'value': '% no Mix', 'variable': 'Cenário'},
+                        template='plotly_white')
         st.plotly_chart(fig_bar, use_container_width=True)
 
         delta_ret = (r_ot / r_at - 1) * 100
@@ -318,15 +239,18 @@ with tabs[3]:
 
     heat_df = resumo.set_index('linha')[['ebitda_medio', 'risco_ebitda', 'cg_medio', 'sharpe_corp']].copy()
 
+    # matriz que controla as CORES (mais sensível aos sliders)
     heat_color = heat_df.copy()
     heat_color['ebitda_medio'] = heat_color['ebitda_medio'] * (1 + (volat_slider - 1) * 0.9 + (exposicao_max - 0.6) * 1.2)
     heat_color['risco_ebitda'] = heat_color['risco_ebitda'] * (1 + (volat_slider - 1) * 2.8 + (exposicao_max - 0.6) * 2.0)
     heat_color['cg_medio'] = heat_color['cg_medio'] * (1 + (volat_slider - 1) * 1.6 + (exposicao_max - 0.6) * 1.4)
     heat_color['sharpe_corp'] = heat_color['sharpe_corp'] * (1 - (volat_slider - 1) * 1.2 - (exposicao_max - 0.6) * 0.8)
 
+    # normalização mais agressiva para espalhar bem as cores
     heat_norm = (heat_color - heat_color.min()) / (heat_color.max() - heat_color.min() + 1e-9)
     heat_norm = np.clip((heat_norm - 0.5) * 1.8 + 0.5, 0, 1)
 
+    # valores reais exibidos no heatmap
     text_values = heat_df.copy()
     text_values['ebitda_medio'] = text_values['ebitda_medio'].map(lambda x: f"{x:,.0f}")
     text_values['risco_ebitda'] = text_values['risco_ebitda'].map(lambda x: f"{x:,.0f}")
@@ -366,12 +290,7 @@ with tabs[4]:
     st.dataframe(df, use_container_width=True)
 
     csv = df.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        "📥 Baixar Base Completa (CSV)",
-        data=csv,
-        file_name="cfo_industrial_mindset.csv",
-        mime="text/csv"
-    )
+    st.download_button("📥 Baixar Base Completa (CSV)", data=csv, file_name="cfo_industrial_mindset.csv", mime="text/csv")
 
 # --- FOOTER ---
 st.markdown("---")
